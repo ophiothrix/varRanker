@@ -1,0 +1,11 @@
+version: 0.7
+data_loading: FALSE
+cache_loading: FALSE
+recursive_loading: FALSE
+munging: TRUE
+logging: FALSE
+load_libraries: FALSE
+libraries: 
+as_factors: TRUE
+data_tables: FALSE
+attach_internal_libraries: FALSE

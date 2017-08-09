@@ -1,0 +1,12 @@
+# exclude
+.DS_Store
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+data/*
+cache/*
+graphs/*
+reports/*
+
+# exceptions
