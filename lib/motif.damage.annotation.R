@@ -67,10 +67,9 @@ get.damage.scores.direct <- function(database.path, variants) {
 	require(BSgenome.Hsapiens.UCSC.hg19)
 	require(GenomicRanges)
 	require(GenomicFeatures)
-	require(OrganismDbi)
+	# require(OrganismDbi)
 	compl.table <- c(A = "T", C = "G", G = "C", T = "A")
-	variants$log2.damage.score <- 0
-	variants$motif.hit <- 0
+	variants$motif.absolute.score <- variants$motif.loss.score <- variants$motif.gain.score <- variants$motif.hit <- 0
 	
 	### Get PFMs from the database file
 	motif.PFMs <- extract.pfm(database.path, force.run = F)
@@ -89,14 +88,20 @@ get.damage.scores.direct <- function(database.path, variants) {
 	## Get the reference sequence
 	ref.seq <- as.character(getSeq(BSgenome.Hsapiens.UCSC.hg19, variants.tmp))
 	## Check if the reference allele is the same in reference sequence and in the vcf
-	ref.allele <- substr(ref.seq, flnk+1, nchar(ref.seq)-flnk)
-	all(ref.allele == variants.tmp$REF)
+	ref.allele <- substr(ref.seq, flnk+1, flnk+1)
+	if(all(ref.allele != variants.tmp$REF)) {
+		stop("Reference alleles in the variant object do not match the corresponding base in human reference genome")
+	}
 	## To each sequence add corresponding genomic coordinates
 	coords <- paste0(">", paste(as.character(seqnames(variants.tmp)), paste(start(variants.tmp), end(variants.tmp), sep = "-"), sep = ":"))
 	ref.seq <- cbind(coords, ref.seq)
 	
-	## Eventually, it would be nice (especially for indels) to reconstruct the reference and alternate seqnences, run FIMO on those separately and compare the scores. But for now (SNP solution only) we can take the reference genome sequence. The difference will be calculated between the reference and alternate nuceotides
+	### If we only search for the motif in the reference sequences, we might miss the variants that create a new motif. In order to overcome this limitation, generate an additional set of sequences, where reference allele has been substituted with the corresponding alternate allele. Eventually, it would be great to enable this functionality for indels as well
+	alt.seq <- paste0(substr(ref.seq[,2], 1, flnk), variants.tmp$ALT, substr(ref.seq[,2], flnk+2, flnk*2+1))
+	alt.seq <- cbind(coords, alt.seq)
+	ref.seq <- rbind(ref.seq, alt.seq)
 	
+
 	## write sequence files
 	write.table(ref.seq, "./ref.seq.file.txt", quote = F, col.names = F, row.names = F, sep = "\n")
 	
@@ -110,7 +115,9 @@ get.damage.scores.direct <- function(database.path, variants) {
 	file.remove("motif.map.tmp.txt")
 	
 	# Check that all motif IDs in the fimo_out file are present in meme database (i.e. don't care if there are some motifs in the database that didn't get called, as long as all that did get called are in the PFM database)
-	all(unique(names(mapped.motifs.chr)) %in% names(motif.PFMs))
+	if(!all(unique(names(mapped.motifs.chr)) %in% names(motif.PFMs))) {
+		stop("There are some motifs among the called oned that are absent from the motif database.")
+	}
 	
 	## Map the variants to motif hits
 	mapped.vars <- as.data.frame(mapToTranscripts(variants, mapped.motifs.chr))
@@ -137,13 +144,20 @@ get.damage.scores.direct <- function(database.path, variants) {
 	# The ratio can capture both the variants that potentially disrupt the binding (higher freq base -> lower freq base) and enhance the binding (lower freq base -> higher freq base). Take a log2 to make the damage score symmetrical
 	mapped.vars$log2.damage.score <- log2(mapped.vars$damage.score)
 	
+	## A motif hit can result in both motif gain and motif loss. On one hand we don't really care, what a variant does as long as it does something. But it might be useful to record both the motif gain and motif loss impact of the same variant. To acommodate that, record separate scores for motif loss and motif gain.
 	# Only some of the variants are mapped to the motifs. Additionally, each variant can map to more than one motif. So in order to assign a damage score to each of the original variables two things need to be done: 1) Get a single damage score per motif based on the highest absolute value. 2) Assign the motifs with damage scores back to the original list of variants. The variants without damage score get 0.
-	max.log2.damage.score <- tapply(mapped.vars$log2.damage.score, mapped.vars$xHits, function(x) x[which.max(abs(x))])
-	variants$log2.damage.score[as.numeric(names(max.log2.damage.score))] <- max.log2.damage.score
-	motif.hit <- tapply(mapped.vars$log2.damage.score, mapped.vars$xHits, function(x) x[which.max(abs(x))])
-	variants$motif.hit[unique(mapped.vars$xHits)] <- 1
-	summary(variants$motif.hit == 1 & variants$log2.damage.score == 0)
+	max.log2.damage.score <- abs(tapply(mapped.vars$log2.damage.score, mapped.vars$xHits, function(x) x[which.max(abs(x))]))
+	motif.loss.score <- tapply(mapped.vars$log2.damage.score, mapped.vars$xHits, function(x) x[which.max(x)])
+	motif.gain.score <- tapply(mapped.vars$log2.damage.score, mapped.vars$xHits, function(x) x[which.min(x)])
+	## The directionality of damage needs to be enforced. I.e. all motif gain scores have to be negative and vice versa. If not, set it to 0.
+	motif.loss.score[motif.loss.score < 0] <- 0
+	motif.gain.score[motif.gain.score > 0] <- 0
+
+	variants$motif.absolute.score[as.numeric(names(max.log2.damage.score))] <- max.log2.damage.score
+	variants$motif.loss.score[as.numeric(names(motif.loss.score))] <- motif.loss.score
+	variants$motif.gain.score[as.numeric(names(motif.gain.score))] <- motif.gain.score
 	## Also make a separate feature to mark whether a variant hits a motif without specifying the damage
+	variants$motif.hit[unique(mapped.vars$xHits)] <- 1
 	gc()
 	return(variants)
 }

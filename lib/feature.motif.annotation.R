@@ -6,36 +6,38 @@ feature.motif.annotation <- function(variants, tissue_id) {
 
   variants$id <- 1:length(variants)
   
-  # Adding motif damage scores ----------------------------------------------
+  #### Adding motif damage scores ----------------------------------------------
+  ### Add motif damage score for all the variants. Current implementation cannot handle indels, so we'll ignore them for the time being.
   
-  
-  ### Add motif damage score for ALL the variants. It can't be explicitly calculated for indels, so we'll make an assumption that if indel hits a motif, it destroys it and hence is highly damaging. We could make a more refined assumption based on how central the indel is. But let's keep it simple for now.
+  ## Check if there are any indels in the variant set
+  if(!all(nchar(variants$REF) == 1 & nchar(variants$ALT) == 1)) {
+  	stop("The variant set contains indels. Remove them before proceeding.")
+  }
   
   ## Start with SNPs and generate explicit motif damage.
   print("Calculating motif damage scores...")
-  # Make a new object only containing SNV - Both REF and ALT are single nucleotide
-  snp.variants <- variants[nchar(variants$REF) == 1 & nchar(variants$ALT) == 1]
   source("./lib/motif.damage.annotation.R")
   
   ## Add JASPAR damage score annotation to SNVs
-  snp.variants <- get.damage.scores.direct(database.path = "~/utils/motif_databases/JASPAR/JASPAR_CORE_2016_vertebrates.meme", variants = snp.variants)
-  snp.variants$jaspar.damage.score <- snp.variants$log2.damage.score
-  snp.variants$jaspar.motif.hit <- snp.variants$motif.hit
+  variants.tmp <- get.damage.scores.direct(database.path = "~/utils/motif_databases/JASPAR/JASPAR_CORE_2016_vertebrates.meme", variants = variants)
+  variants$jaspar.abs.score <- variants.tmp$motif.absolute.score
+  variants$jaspar.loss.score <- variants.tmp$motif.loss.score
+  variants$jaspar.gain.score <- variants.tmp$motif.gain.score
+  variants$jaspar.motif.hit <- variants.tmp$motif.hit
+
+  # Clean up
+  rm(variants.tmp)
+  gc()
   
   ## Add HOCOMOCO damage score annotation SNVs
-  snp.variants <- get.damage.scores.direct(database.path = "~/utils/motif_databases/HUMAN/HOCOMOCOv9.meme", variants = snp.variants)
-  snp.variants$hocomoco.damage.score <- snp.variants$log2.damage.score
-  snp.variants$hocomoco.motif.hit <- snp.variants$motif.hit
-  
-  ## Add the damage scores back to the original variant set
-  variants$hocomoco.damage.score <- variants$jaspar.damage.score <- NA
-  test1 <- (paste0(snp.variants$id, snp.variants$ALT))
-  test2 <- (paste0(variants$id, variants$ALT))
-  variants$jaspar.damage.score <- snp.variants$jaspar.damage.score[match(test2, test1)]
-  variants$hocomoco.damage.score <- snp.variants$hocomoco.damage.score[match(test2, test1)]
+  variants.tmp <- get.damage.scores.direct(database.path = "~/utils/motif_databases/HUMAN/HOCOMOCOv9.meme", variants = variants)
+  variants$hocomoco.abs.score <- variants.tmp$motif.absolute.score
+  variants$hocomoco.loss.score <- variants.tmp$motif.loss.score
+  variants$hocomoco.gain.score <- variants.tmp$motif.gain.score
+  variants$hocomoco.motif.hit <- variants.tmp$motif.hit
   
   # Clean up
-  rm(snp.variants)
+  rm(variants.tmp)
   gc()
   
   # Add promoter and enhancer annotations -----------------------------------
