@@ -5,7 +5,7 @@ require(GenomicRanges)
 require(BSgenome.Hsapiens.UCSC.hg19)
 
 ## Load the set and convert to a GRanges object
-all.as.dhs <- GRanges(read.table("./data/ng.3432-S5.txt", header = T, stringsAsFactors = F))
+all.as.dhs <- GRanges(read.table("./cache/ng.3432-S5.txt", header = T, stringsAsFactors = F))
 ## Change to 1-based coordinates
 start(all.as.dhs) <- start(all.as.dhs) + 1
 

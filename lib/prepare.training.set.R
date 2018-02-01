@@ -65,12 +65,23 @@ prepare.training.set <- function(path.to.positive.set, path.to.negative.set, pro
 	training.set$chromHMM.state <- as.factor(training.set$chromHMM.state)
 	training.set$GERP.score <- as.numeric(training.set$GERP.score)
 	training.set$regulatory <- as.factor(training.set$regulatory)
-	training.set$IDEAS.state <- as.factor(training.set$IDEAS.state)
+	if (length(grep("IDEAS.state", colnames(training.set))) != 0) {
+		training.set$IDEAS.state <- as.factor(training.set$IDEAS.state)
+	}
+	if (length(grep("jaspar.motif.hit", colnames(training.set))) != 0) {
+		training.set$jaspar.motif.hit <- as.factor(training.set$jaspar.motif.hit)
+	}
+	if (length(grep("hocomoco.motif.hit", colnames(training.set))) != 0) {
+		training.set$hocomoco.motif.hit <- as.factor(training.set$hocomoco.motif.hit)
+	}
+	training.set$prom.Core <- as.factor(training.set$prom.Core)
+	training.set$prom.Domain <- as.factor(training.set$prom.Domain)
 	
-	## Generate absolute values for the damage scores
-	training.set$hocomoco.damage.score.abs <- abs(training.set$hocomoco.damage.score)
-	training.set$jaspar.damage.score.abs <- abs(training.set$jaspar.damage.score)
-	
+	## Do the same for all the binary epigenome values
+	for (ftre in grep("bin", colnames(training.set), value = T)) {
+		training.set[,ftre] <- as.factor(training.set[,ftre])
+	}
+
 	## Save prepared training set
 	return(training.set)
 }

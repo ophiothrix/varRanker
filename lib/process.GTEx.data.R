@@ -1,13 +1,13 @@
-### Requires GTEx_Analysis_v6p_eQTL.tar file from GTEx portal. Can't be downloaded automatically, at least not easily.
+### Requires GTEx_Analysis_v7_eQTL.tar file from GTEx portal. Can't be downloaded automatically, at least not easily.
 require(data.table)
 require(GenomicRanges)
 dir.create("./data/GTEx", showWarnings = F, recursive = T)
 ## Place the file in "./data/GTEx"
 
-system("tar xvf ./data/GTEx/GTEx_Analysis_v6p_eQTL.tar -C ./data/GTEx")
-file.remove("./data/GTEx/GTEx_Analysis_v6p_eQTL.tar")
+system("tar xvf ./data/GTEx/GTEx_Analysis_v7_eQTL.tar.gz -C ./data/GTEx")
+# file.remove("./data/GTEx/GTEx_Analysis_v7_eQTL.tar")
 ## Combine variant ids from all tissues into a single file
-system("gunzip -c ./data/GTEx/GTEx_Analysis_v6p_eQTL/*.signif_snpgene_pairs.txt.gz | cut -f1 | gzip -c > ./data/GTEx/all.variant.ids.txt.gz")
+system("gunzip -c ./data/GTEx/GTEx_Analysis_v7_eQTL/*.signif_variant_gene_pairs.txt.gz | cut -f1 | gzip -c > ./data/GTEx/all.variant.ids.txt.gz")
 
 ## Read in variant ids
 variant.ids <- fread(input = "gunzip -c ./data/GTEx/all.variant.ids.txt.gz", header = T, stringsAsFactors = F)

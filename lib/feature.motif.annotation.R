@@ -19,7 +19,7 @@ feature.motif.annotation <- function(variants, tissue_id) {
   source("./lib/motif.damage.annotation.R")
   
   ## Add JASPAR damage score annotation to SNVs
-  variants.tmp <- get.damage.scores.direct(database.path = "~/utils/motif_databases/JASPAR/JASPAR_CORE_2016_vertebrates.meme", variants = variants)
+  variants.tmp <- get.damage.scores.direct(database.path = paste0(motif.database.path, "/JASPAR/JASPAR_CORE_2016_vertebrates.meme"), variants = variants)
   variants$jaspar.abs.score <- variants.tmp$motif.absolute.score
   variants$jaspar.loss.score <- variants.tmp$motif.loss.score
   variants$jaspar.gain.score <- variants.tmp$motif.gain.score
@@ -30,7 +30,7 @@ feature.motif.annotation <- function(variants, tissue_id) {
   gc()
   
   ## Add HOCOMOCO damage score annotation SNVs
-  variants.tmp <- get.damage.scores.direct(database.path = "~/utils/motif_databases/HUMAN/HOCOMOCOv9.meme", variants = variants)
+  variants.tmp <- get.damage.scores.direct(database.path = paste0(motif.database.path, "/HUMAN/HOCOMOCOv9.meme"), variants = variants)
   variants$hocomoco.abs.score <- variants.tmp$motif.absolute.score
   variants$hocomoco.loss.score <- variants.tmp$motif.loss.score
   variants$hocomoco.gain.score <- variants.tmp$motif.gain.score
@@ -47,7 +47,7 @@ feature.motif.annotation <- function(variants, tissue_id) {
   print("Adding pan-tissue chromatin state annotation...")
   all.states <- data.frame(matrix(nrow = length(variants)))
   head(all.states)
-  for (state in list.files("./data/ENCODE/chromHMM.calls", "rds", full.names = T)) {
+  for (state in list.files("./cache/ENCODE/chromHMM.calls", "rds", full.names = T)) {
     print(state)
     state.name <- gsub(".union.rds", "", gsub(".*_", "", state))
     state <- readRDS(state)

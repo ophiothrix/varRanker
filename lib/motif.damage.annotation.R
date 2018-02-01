@@ -4,8 +4,8 @@
 ## You need to have MEME suite installed ##
 ## The version used for development is meme_4.12.0 ##
 ## The motif database version used is motif_databases.12.15 ##
-fimo.path <- "~/utils/meme/bin/fimo"
-
+fimo.path <- "~/tools/meme/bin/fimo"
+motif.database.path <- "~/tools/motif_databases"
 
 #### Extract Position Frequency Matrices from a given MEME motif database ####
 
@@ -106,7 +106,7 @@ get.damage.scores.direct <- function(database.path, variants) {
 	write.table(ref.seq, "./ref.seq.file.txt", quote = F, col.names = F, row.names = F, sep = "\n")
 	
 	## Run FIMO on the saved sequences
-	system(paste0(fimo.path, " --text --skip-matched-sequence --parse-genomic-coord ", database.path, " ref.seq.file.txt > motif.map.tmp.txt"))
+	system(paste0(fimo.path, " --text --skip-matched-sequence --parse-genomic-coord ", database.path, " ref.seq.file.txt > motif.map.tmp.txt"), ignore.stderr = T)
 	file.remove("ref.seq.file.txt")
 	
 	## Load the map of motifs

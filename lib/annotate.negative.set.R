@@ -4,7 +4,7 @@
 ## Returns annotated set of matched and random negative variants.
 ## Saves GRanges object containing annotated variants
 
-annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 2000) {
+annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 1000, maf.cutoff = 0.05) {
 	require(GenomicRanges)
 	print("Putting together a set of negative variants...")	
 	path.to.positive.set <- paste0("./cache/", tissue.id, ".annotated.", variant.file.id, ".variants.rds")
@@ -42,8 +42,10 @@ annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 
 	## Load 1KG dataset
 	variants.1KG <- readRDS("./data/control.variants/variants.1KG.full.rds")
 	## Subset to variants with MAF > 0.25
-	# summary(variants.1KG$MAF > 0.25)
-	common.variants <- variants.1KG[variants.1KG$MAF > 0.25]
+	summary(variants.1KG$MAF > maf.cutoff)
+	common.variants <- variants.1KG[variants.1KG$MAF > maf.cutoff]
+	## Let's not limit the 1000 genomes variants to high frequencies. Probably doesn't matter much anyway, as we only include very few variants from this set.
+	# common.variants <- variants.1KG
 	
 	## get 1KG variants within 2 kb of the positive set variants
 	search.space <- GenomicRanges::shift(variants, -(window.to.match/2))
@@ -55,18 +57,22 @@ annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 
 	
 	## Sample random 1KG variants, the same number as the matched variants
 	## Remove 1KG variants that overlap with reported eQTLs and AS DHS
-	summary(matched.1KG.variants %in% all.as.dhs)
-	summary(matched.1KG.variants %in% eQTLs)
-	matched.1KG.variants <- matched.1KG.variants[!(matched.1KG.variants %in% eQTLs)]
-	matched.1KG.variants <- matched.1KG.variants[!(matched.1KG.variants %in% all.as.dhs)]
+	# summary(matched.1KG.variants %in% all.as.dhs)
+	# summary(matched.1KG.variants %in% eQTLs)
+	olaps <- findOverlaps(matched.1KG.variants, eQTLs)
+	matched.1KG.variants <- matched.1KG.variants[-queryHits(olaps)]
+	olaps <- findOverlaps(matched.1KG.variants, all.as.dhs)
+	matched.1KG.variants <- matched.1KG.variants[-queryHits(olaps)]
 	matched.1KG.variants$source <- "matched"
 	set.seed(15052017)
 	ids <- sample(1:length(common.variants), size = length(matched.1KG.variants)*1.3, replace = F)
 	random.1KG.variants <- common.variants[ids]
-	summary(random.1KG.variants %in% all.as.dhs | random.1KG.variants %in% eQTLs)
-	summary(random.1KG.variants %in% eQTLs)
-	random.1KG.variants <- random.1KG.variants[!(random.1KG.variants %in% eQTLs)]
-	random.1KG.variants <- random.1KG.variants[!(random.1KG.variants %in% all.as.dhs)]
+	# summary(random.1KG.variants %in% all.as.dhs | random.1KG.variants %in% eQTLs)
+	# summary(random.1KG.variants %in% eQTLs)
+	olaps <- findOverlaps(random.1KG.variants, eQTLs)
+	random.1KG.variants <- random.1KG.variants[-queryHits(olaps)]
+	olaps <- findOverlaps(random.1KG.variants, all.as.dhs)
+	random.1KG.variants <- random.1KG.variants[-queryHits(olaps)]
 	random.1KG.variants$source <- "random"
 	## Remove MAF column
 	mcols(matched.1KG.variants) <- mcols(matched.1KG.variants)[,c(1,2,4)]
@@ -104,7 +110,10 @@ annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 
 	
 	## Annotate variants with conservation scores
 	source("./lib/add.conservation.scores.R")
-	variants$GERP.score <- conservation.score.annotation(variants)
+	variants <- annotate.GERP(variants)
+	variants <- annotate.phastCons(variants)
+	variants <- annotate.phyloP(variants)
+	
 	
 	## Annotate variants with tissue-specific epigenetic marks and ChromHMM and GEP predicted states
 	source("./lib/epigenome.annotation.R")

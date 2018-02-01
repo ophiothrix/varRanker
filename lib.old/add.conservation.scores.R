@@ -1,8 +1,10 @@
 #### GERP score ####
 
 conservation.score.annotation <- function(variants) {
+	## Adding GERP conservation score
 	## If there are no conservation score files, download GERP scores
 	if (length(list.files("./data/conservation.scores/GERP", "maf.rates.gz$")) != 25) {
+		print("GERP score file is missing. Downloading it...")
 		source("./lib/download.GERP.score.R")
 	}
 	score.dir <- "./data/conservation.scores/GERP/"
@@ -12,12 +14,12 @@ conservation.score.annotation <- function(variants) {
 	
 	## Check that the variants object is sorted
 	if (any(order(variants) != 1:length(variants))) {
-		variants <- variants[order(variants)]
+		stop("Variant object is not sorted.")
 	}
 	
 	scores <- character()
 	for (chr in seqlevels(variants)) {
-		print(chr)
+		print(paste0("Extracting GERP score from ", chr))
 		if (length(variants[seqnames(variants) == chr]) == 0) {
 			next
 		}
@@ -35,4 +37,5 @@ conservation.score.annotation <- function(variants) {
 	
 	score <- do.call(rbind, strsplit(scores, "\t"))[,2]
 	return(score)
+	file.remove("linesfile")
 }

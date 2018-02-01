@@ -9,7 +9,9 @@ annotate.GRanges <- function(variants, tissue.id) {
 	
 	## Annotate variants with conservation scores
 	source("./lib/add.conservation.scores.R")
-	variants$GERP.score <- conservation.score.annotation(variants)
+	variants <- annotate.GERP(variants)
+	variants <- annotate.phastCons(variants)
+	variants <- annotate.phyloP(variants)
 	
 	## Annotate variants with tissue-specific epigenetic marks and ChromHMM and GEP predicted states
 	source("./lib/epigenome.annotation.R")

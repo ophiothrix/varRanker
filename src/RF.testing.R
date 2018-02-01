@@ -1,13 +1,12 @@
+## Setting up
 rm(list = ls())
 gc()
 require(pROC)
 require(h2o)
+require(RColorBrewer)
 ## Initiate H2O instance
 localH2O <- h2o.init(nthreads=-1)
 nfolds <- 5
-
-
-require(RColorBrewer)
 clrs <- brewer.pal(5, "Dark2")
 
 ### Prepare the input data ###
@@ -18,14 +17,6 @@ training.set <- prepare.training.set(path.to.positive.set = "./cache/E126.annota
 
 head(training.set)
 dim(training.set)
-if( length(grep("IDEAS.state", colnames(training.set))) == 1){
-	training.set$IDEAS.state <- as.factor(training.set$IDEAS.state)
-	# table(training.set$IDEAS.state, training.set$regulatory)
-}
-
-## convert damage scores to absolute values
-training.set$hocomoco.damage.score.abs <- abs(training.set$hocomoco.damage.score)
-training.set$jaspar.damage.score.abs <- abs(training.set$jaspar.damage.score)
 
 summary(training.set$regulatory)
 

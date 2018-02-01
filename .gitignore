@@ -9,4 +9,8 @@ cache/*
 graphs/*
 reports/*
 
-# exceptions
+# exceptions for the folders that I want to move empty
+!data/.gitkeep
+!cache/.gitkeep
+!graphs/.gitkeep
+!reports/.gitkeep

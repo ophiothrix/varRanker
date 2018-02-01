@@ -1,6 +1,6 @@
 #!/bin/bash
 rm all.tissues.bed
-for fls in `ls ./data/ENCODE/chromHMM.calls/*.bed.gz`
+for fls in `ls ./cache/ENCODE/chromHMM.calls/*.bed.gz`
 do 
 	echo $fls
 	tname=`echo $fls | sed "s/.*\///" | sed "s/_.*//"`
