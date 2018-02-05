@@ -6,10 +6,15 @@
 # path.to.positive.set <- "./cache/E120.annotated.fMuscle.variants.rds"
 # path.to.negative.set <- "./cache/E120.annotated.fMuscle.negative.set.rds"
 require(GenomicRanges)
-prepare.training.set <- function(path.to.positive.set, path.to.negative.set, prop.matched = 0.45, prop.dnase = 0.45, prop.random = 0.1) {
+prepare.training.set <- function(path.to.positive.set, path.to.negative.set, prop.matched = 0.45, prop.dnase = 0.5, prop.random = 0.05, negative.positive.ratio = 3) {
 	## load the datasets
 	positive.set <- readRDS(path.to.positive.set)
 	negative.set <- readRDS(path.to.negative.set)
+	
+	## We'd like to be able to identify the variants, especially, when combining them from multiple tissues. So let's create a variant id from coordinates and alternate allele (reference allele should be the same for a given coordinate)
+	positive.set$varID <- paste0(as.character(seqnames(positive.set)), ":", start(positive.set), ":", positive.set$ALT)
+	negative.set$varID <- paste0(as.character(seqnames(negative.set)), ":", start(negative.set), ":", negative.set$ALT)
+	
 	
 	## Convert to data.frames
 	positive.set <- as.data.frame(mcols(positive.set))
@@ -18,12 +23,12 @@ prepare.training.set <- function(path.to.positive.set, path.to.negative.set, pro
 	dim(negative.set)
 	
 	## Resample the negative set so that:
-	# Total number of negative variants is 2X the number of positive
+	# Total number of negative variants == X times the number of positive
 	# The number of negative variants from different sources is deternined by the proportions set
 	table(negative.set$source)
-	n.matched <- round(nrow(positive.set) * prop.matched * 2)
-	n.dnase <- round(nrow(positive.set) * prop.dnase * 2)
-	n.random <- round(nrow(positive.set) * prop.random * 2)
+	n.matched <- round(nrow(positive.set) * prop.matched * negative.positive.ratio)
+	n.dnase <- round(nrow(positive.set) * prop.dnase * negative.positive.ratio)
+	n.random <- round(nrow(positive.set) * prop.random * negative.positive.ratio)
 	
 	## Subsample the negative variants
 	set.seed(08062017)
@@ -33,6 +38,8 @@ prepare.training.set <- function(path.to.positive.set, path.to.negative.set, pro
 	table(negative.set$source)
 	
 	## Subset to a common set of columns
+	## We'd like to keep variant source for debugging, so add source column to the postitive variants
+	positive.set$source <- "positive"
 	common.cols <- intersect(colnames(positive.set), colnames(negative.set))
 	positive.set <- positive.set[,colnames(positive.set) %in% common.cols]
 	negative.set <- negative.set[,colnames(negative.set) %in% common.cols]
@@ -52,7 +59,6 @@ prepare.training.set <- function(path.to.positive.set, path.to.negative.set, pro
 	## Remove coding variants
 	table(training.set$feature)
 	training.set <- training.set[training.set$feature != "coding",]
-	summary(training.set)
 	
 	## Check if any columns contain NAs
 	training.set <- training.set[,!(apply(training.set, 2, function(x) any(is.na(x))))]

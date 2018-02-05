@@ -18,8 +18,9 @@ head(mappings)
 ## Remove unmatched tissues
 mappings <- mappings[mappings$AS.DHS.tissue != "",]
 ## We're going to use fetal skin fibroblasts as a test set. So remove them from the training part
-mappings <- mappings[mappings$AS.DHS.tissue != "",]
 mappings <- mappings[-grep("fSkin_fibro", mappings$AS.DHS.tissue),]
+## Same goes for HSMM
+mappings <- mappings[-grep("HSMM", mappings$AS.DHS.tissue),]
 sum(mappings$AS.variants)
 sum(mappings$AS.variants[mappings$perfect.match])
 sum(mappings$AS.variants[!mappings$perfect.match])
@@ -153,3 +154,16 @@ saveRDS(combined.set, "./cache/perfect.variants.full.annotation.rds")
 
 
 write.csv(variant.summary, "./reports/annotated.variant.summary.csv")
+
+
+#################################################################
+### Check the redundancy among positive and negative variants ###
+#################################################################
+head(combined.set)
+table(combined.set$source)
+summary(duplicated(combined.set$varID[combined.set$source == "random"]))
+summary(duplicated(combined.set$varID[combined.set$source == "dnase"]))
+summary(duplicated(combined.set$varID[combined.set$source == "matched"]))
+summary(duplicated(combined.set$varID[combined.set$source == "positive"]))
+
+## The redundancy is almost as bad for the negative variants (between 20 and 40%) as it is for positive ones (about 30%). This is likely stemming from the fact that we set the same seed when sampling negative variants from different tissues, so we end up sampling largely the same variants. One way to get around this is to over-sample the negative variants, say to 3 time the number of positive ones. But I'm not sure if it will let it.

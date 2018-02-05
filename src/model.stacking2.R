@@ -57,7 +57,13 @@ h2o.auc(h2o.performance(model_gbm, xval = T))
 h2o.auc(h2o.performance(model_ensemble, xval = T))
 
 
-test.imperfect <- as.h2o(readRDS("./cache/test.imperfect5.rds"))
+test.perfect <- as.h2o(readRDS("./cache/test.perfect3.rds"))
+h2o.auc(h2o.performance(model_drf, newdata = test.perfect, valid = T))
+h2o.auc(h2o.performance(model_gbm, newdata = test.perfect, valid = T))
+h2o.auc(h2o.performance(model_ensemble, newdata = test.perfect, valid = T))
+
+
+test.imperfect <- as.h2o(readRDS("./cache/test.imperfect4.rds"))
 h2o.auc(h2o.performance(model_drf, newdata = test.imperfect, valid = T))
 h2o.auc(h2o.performance(model_gbm, newdata = test.imperfect, valid = T))
 h2o.auc(h2o.performance(model_ensemble, newdata = test.imperfect, valid = T))
@@ -67,7 +73,7 @@ h2o.auc(h2o.performance(model_ensemble, newdata = test.imperfect, valid = T))
 ####4 - 0.8222107
 #5 - 0.7833855
 
-test.mismatched <- as.h2o(readRDS("./cache/test.mismatched5.rds"))
+test.mismatched <- as.h2o(readRDS("./cache/test.mismatched4.rds"))
 h2o.auc(h2o.performance(model_drf, newdata = test.mismatched, valid = T))
 h2o.auc(h2o.performance(model_gbm, newdata = test.mismatched, valid = T))
 h2o.auc(h2o.performance(model_ensemble, newdata = test.mismatched, valid = T))
@@ -138,3 +144,25 @@ dev.off()
 roc4$auc
 roc2$auc
 par(mfrow = c(1, 2))
+
+
+
+plot(1, 1, xlim = c(1, 0), ylim = c(0,1), type = "n", ylab = "Sensitivity", xlab = "Specificity")#, main = "Test set, closely matched")
+## Generate ROC curve for validation set predictions
+predicted <- as.data.frame(h2o.predict(model_ensemble, valid.set.h2o))
+roc1 <- roc(response = as.vector(valid.set.h2o$regulatory), predictor = as.vector(predicted$p1), plot = T, smooth = F, add = T, col = clrs[1])
+
+## Generate ROC curve for correctly annotated test set
+predicted <- as.data.frame(h2o.predict(model_ensemble, test.perfect))
+roc2 <- roc(response = as.vector(test.perfect$regulatory), predictor = predicted$p1, plot = T, smooth = F, add = T, col = clrs[2])
+
+## Generate ROC curve for loosely matched test set
+predicted <- as.data.frame(h2o.predict(model_ensemble, test.imperfect))
+roc3 <- roc(response = as.vector(test.imperfect$regulatory), predictor = predicted$p1, plot = T, smooth = F, add = T, col = clrs[3])
+
+## Generate ROC curve for mismatched test set
+predicted <- as.data.frame(h2o.predict(model_ensemble, test.mismatched))
+roc4 <- roc(response = as.vector(test.mismatched$regulatory), predictor = predicted$p1, plot = T, smooth = F, add = T, col = clrs[4])
+
+abline(a = 1, b = -1, col = "darkgrey", lty = 2, lwd = 2)
+legend("bottomright", legend = paste(c("Validation set",  "Well matched test set", "Matched test set", "Mismatched test set"), round(c(roc1$auc, roc2$auc, roc3$auc, roc4$auc), 3), sep = "; AUC="), fill = clrs[1:5], bty = "n")

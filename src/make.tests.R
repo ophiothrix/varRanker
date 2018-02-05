@@ -86,4 +86,21 @@ ids <- sample(which(test.cadd3$regulatory == 0), -diff(table(test.cadd3$regulato
 test.cadd3 <- test.cadd3[-ids,]
 saveRDS(test.cadd3, "./cache/test.cadd3.rds")
 
+test.perfect <- prepare.training.set(path.to.positive.set = "./cache/E120.annotated.HSMM.variants.rds", path.to.negative.set = "./cache/E120.annotated.HSMM.negative.set.rds", prop.matched = 0.5, prop.dnase = 0.5, prop.random = 0.05)
+## Subsample negative set
+ids <- sample(which(test.perfect$regulatory == 0), -diff(table(test.perfect$regulatory)), replace = F)
+test.perfect <- test.perfect[-ids,]
+saveRDS(test.perfect, "./cache/test.perfect1.rds")
+
+test.perfect <- prepare.training.set(path.to.positive.set = "./cache/E089.annotated.fMuscle.variants.rds", path.to.negative.set = "./cache/E089.annotated.fMuscle.negative.set.rds", prop.matched = 0.5, prop.dnase = 0.5, prop.random = 0.05)
+## Subsample negative set
+ids <- sample(which(test.perfect$regulatory == 0), -diff(table(test.perfect$regulatory)), replace = F)
+test.perfect <- test.perfect[-ids,]
+saveRDS(test.perfect, "./cache/test.perfect2.rds")
+
+test.perfect <- prepare.training.set(path.to.positive.set = "./cache/E090.annotated.fMuscle.variants.rds", path.to.negative.set = "./cache/E090.annotated.fMuscle.negative.set.rds", prop.matched = 0.5, prop.dnase = 0.5, prop.random = 0.05)
+## Subsample negative set
+ids <- sample(which(test.perfect$regulatory == 0), -diff(table(test.perfect$regulatory)), replace = F)
+test.perfect <- test.perfect[-ids,]
+saveRDS(test.perfect, "./cache/test.perfect3.rds")
 

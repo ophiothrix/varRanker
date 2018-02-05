@@ -114,3 +114,4 @@ for (i in 1:nrow(mappings)) {
 }
 
 
+head(mappings[order(mappings$AS.variants, decreasing = T),], 30)
