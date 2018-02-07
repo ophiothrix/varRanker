@@ -1,3 +1,7 @@
+CONCREVAR
+CONtextual Classifier for REgulatory VARiants
+
+
 #### IMPORTANT ####
 The package relies on having a current installation of MEME suite and motif databases for calculating motif damage score. Make sure to specify the correct path to FIMO function at the top of *./lib/base.functions.R* script
 

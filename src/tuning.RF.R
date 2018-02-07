@@ -2,8 +2,11 @@
 rm(list = ls())
 gc()
 source("./src/prep.sets.R")
+sets.list <- prep.sets(path.to.full.set = "./cache/all.variants.partial.annotation.rds", test.set.tissues = c("fMuscle", "HSMM"))
+names(sets.list)
 
-
+train.set <- sets.list$training
+valid.set <- sets.list$validation
 
 ## Train a random forest model
 require(pROC)
@@ -24,6 +27,8 @@ features <- setdiff(colnames(train.set.h2o), target)
 features <- features[-grep("qval", features)]
 ## remove auxiliary columns from features
 features <- features[!features %in% c("varID", "source")]
+
+
 
 ## With cross-validation
 model_drf <- h2o.randomForest(x = features, y = target, training_frame = train.set.h2o, model_id = "h2o_drf", nfolds = nfolds, ntrees = 100, max_depth = 20, fold_assignment = "Modulo", keep_cross_validation_predictions = TRUE, seed = 16052017, validation_frame = valid.set.h2o, score_each_iteration = T, stopping_rounds = 5)

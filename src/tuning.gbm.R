@@ -1,9 +1,14 @@
-## Load training set
+## Prepare the sets
 rm(list = ls())
 gc()
 source("./src/prep.sets.R")
+sets.list <- prep.sets(path.to.full.set = "./cache/all.variants.partial.annotation.rds", test.set.tissues = c("fMuscle", "HSMM"))
+names(sets.list)
 
-## Train a gbm model
+train.set <- sets.list$training
+valid.set <- sets.list$validation
+
+## Train a random forest model
 require(pROC)
 require(h2o)
 require(RColorBrewer)
@@ -11,6 +16,8 @@ require(RColorBrewer)
 localH2O <- h2o.init(nthreads=-1)
 nfolds <- 5
 clrs <- brewer.pal(5, "Dark2")
+
+
 
 train.set.h2o <- as.h2o(train.set)
 valid.set.h2o <- as.h2o(valid.set)

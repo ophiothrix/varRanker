@@ -1,2 +1,21 @@
-CONCREVAR
-CONtextual Classifier for REgulatory VARiants
+
+
+
+Simplify test set selection. Currently, we need to go through the following steps:
+
+- List up all annotated variant sets
+- Decide which one is used as a negative training set and remove it from the list, so it is not included in the full training set
+- Use the remaining variants sets to build the full training set
+ -Check that none of the variants in the test set are still present in the training set. If there are some, remove them from the training set.
+- Extract validation set from the training set and if there are still variants in the training set that overlap with the validation set, remove them from the training set.
+
+Automate the process, so that we need to only give the vector containing tissues that are to be used as test sets. - Done
+
+- Add VCF annotation and prediction workflow
+- Add indel functionality
+- Re-tune the model
+- Remove seeding during annotation, when building negative training set
+- Select negative DNase variants from the specific tissue (same as positive variants)
+- Look at the effect of negative set ratios on the model performance
+- Package into a Docker
+

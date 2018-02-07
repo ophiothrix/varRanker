@@ -9,7 +9,28 @@ source("./lib/annotate.AS.DHS.R")
 source("./lib/annotate.eQTLs.R")
 source("./lib/annotate.negative.set.R")
 
-## Skin fibroblasts with muscle and mammary epit	helium annotations
+### Annotate HSMM variants with:
+## foetal leg muscle
+variants <- annotate.AS.DHS("HSMM", "E089")
+negative.variant.set <- annotate.negative.set(variant.file.id = "HSMM", tissue.id = "E089")
+rm(list = c("variants", "negative.variant.set"))
+gc()
+
+## foetal trunk muscle
+variants <- annotate.AS.DHS("HSMM", "E090")
+negative.variant.set <- annotate.negative.set(variant.file.id = "HSMM", tissue.id = "E090")
+rm(list = c("variants", "negative.variant.set"))
+gc()
+
+## Primary T cells
+variants <- annotate.AS.DHS("HSMM", "E034")
+negative.variant.set <- annotate.negative.set(variant.file.id = "HSMM", tissue.id = "E034")
+rm(list = c("variants", "negative.variant.set"))
+gc()
+
+
+
+## Skin fibroblasts with muscle and mammary epithelium annotations
 variants <- annotate.AS.DHS("fSkin_fibro", "E120")
 negative.variant.set <- annotate.negative.set(variant.file.id = "fSkin_fibro", tissue.id = "E120")
 rm(list = c("variants", "negative.variant.set"))
