@@ -28,7 +28,7 @@ annotate.AS.DHS <- function(variant.file.id, tissue.id) {
 	## From all pre-computed scores at the moment it is only feasible to extract a score for ANY variant for CADD. The others are limited to dbSNP variants, more or less...
 	## For the moment, leave out the pre-computed scores
 	source("./lib/feature.motif.annotation.R")
-	variants <- feature.motif.annotation(variants, tissue.id)
+	variants <- feature.motif.annotation(variants)
 	
 	## Annotate variants with conservation scores
 	source("./lib/add.conservation.scores.R")

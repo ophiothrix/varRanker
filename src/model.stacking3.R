@@ -3,7 +3,7 @@ rm(list = ls())
 gc()
 source("./src/prep.sets.R")
 # sets.list <- prep.sets(path.to.full.set = "./cache/all.variants.partial.annotation.rds", test.set.tissues = c("fMuscle", "HSMM"))
-sets.list <- prep.sets(path.to.full.set = "./cache/all.variants.partial.annotation.rds", test.set.tissues = "fMuscle")
+sets.list <- prep.sets(path.to.full.set = "./cache/all.variants.partial.annotation.rds", path.to.test.sets = "./cache/", test.set.tissues = "HSMM")
 names(sets.list)
 
 train.set <- sets.list$training

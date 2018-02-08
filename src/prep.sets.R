@@ -9,6 +9,7 @@
 # gc()
 prep.sets <- function(path.to.full.set, path.to.test.sets, test.set.tissues) {
 	source("./lib/prepare.training.set.R")
+	
 	## Select the variant set(s) that are to be used for testing
 	# test.set.tissues <- c("HSMM")
 	# test.set.tissues <- c("fMuscle")

@@ -1,4 +1,4 @@
-feature.motif.annotation <- function(variants, tissue_id) {
+feature.motif.annotation <- function(variants) {
   ## Add feature annotation
   require(GenomicRanges)
   source("./lib/add.features.to.variant.sets.R")

@@ -106,7 +106,7 @@ annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 
 	
 	## Annotate variants with genomic features, poly-tissue GEP and ChromHMM sets, TF motif scores, pre-computed damage scores
 	source("./lib/feature.motif.annotation.R")
-	variants <- feature.motif.annotation(variants, tissue.id)
+	variants <- feature.motif.annotation(variants)
 	
 	## Annotate variants with conservation scores
 	source("./lib/add.conservation.scores.R")
