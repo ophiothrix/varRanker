@@ -11,7 +11,7 @@ download.ROADMAP.data <- function(tissue.id) {
 	if (length(list.files("./cache/ENCODE/chromHMM.calls/", "mnemonics.bed.gz")) >= 98) {
 		print("ChromHMM call files exist. Skipping download.")
 	} else {
-		print("Downloading ChromHMM calls for all available tissues")
+		print("Downloading ChromHMM 18-state calls for all available tissues")
 		dir.create("./cache/ENCODE/chromHMM.calls", recursive = T)
 		chromhmm.url <- "http://egg2.wustl.edu/roadmap/data/byFileType/chromhmmSegmentations/ChmmModels/core_K27ac/jointModel/final/all.mnemonics.bedFiles.tgz"
 		curl_download(url = chromhmm.url, destfile = paste0("./cache/ENCODE/", basename(chromhmm.url)))
@@ -60,6 +60,21 @@ download.ROADMAP.data <- function(tissue.id) {
 		}
 	}
 
+	## Download all the ChromHMM calls for 15-state model (only uses core marks)
+	# dir.create("./cache/ENCODE/chromHMM.core.calls/", recursive = T, showWarnings = F)
+	
+	if (length(list.files("./cache/ENCODE/chromHMM.core.calls/", "mnemonics.bed.gz")) >= 98) {
+		print("ChromHMM call files exist. Skipping download.")
+	} else {
+		print("Downloading ChromHMM 15-state calls for all available tissues")
+		dir.create("./cache/ENCODE/chromHMM.core.calls", recursive = T, showWarnings = F)
+		chromhmm.url <- "http://egg2.wustl.edu/roadmap/data/byFileType/chromhmmSegmentations/ChmmModels/coreMarks/jointModel/final/all.mnemonics.bedFiles.tgz"
+		curl_download(url = chromhmm.url, destfile = paste0("./cache/ENCODE/", basename(chromhmm.url)))
+		## Extract the files
+		system("tar -xvf ./cache/ENCODE/all.mnemonics.bedFiles.tgz -C ./cache/ENCODE/chromHMM.core.calls/")
+		file.remove("./cache/ENCODE/all.mnemonics.bedFiles.tgz")
+	}
+	
 	### Download ROADMAP peak calls data ###
 	## Set a list of core histone marks
 	core.marks <- c("DNase.macs2","H3K27me3","H3K36me3","H3K4me1","H3K4me3","H3K9me3")

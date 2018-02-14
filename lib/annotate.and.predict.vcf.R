@@ -181,7 +181,7 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 	# 	filter(p.regulatory != "NA_coding") %>%
 	# 	mutate(p.regulatory=as.numeric(p.regulatory))
 	
-	write.csv(variants, gsub(".vcf.*", ".csv", path.to.vcf), quote = F, row.names = F)
+	write.csv(variants, gsub(".vcf.*", paste0(".", tissue.id, ".annotated.csv"), path.to.vcf), quote = F, row.names = F)
 	
 	
 	# ## Save the variant file

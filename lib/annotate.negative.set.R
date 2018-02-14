@@ -64,7 +64,7 @@ annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 
 	olaps <- findOverlaps(matched.1KG.variants, all.as.dhs)
 	matched.1KG.variants <- matched.1KG.variants[-queryHits(olaps)]
 	matched.1KG.variants$source <- "matched"
-	set.seed(15052017)
+	# set.seed(15052017)
 	ids <- sample(1:length(common.variants), size = length(matched.1KG.variants)*1.3, replace = F)
 	random.1KG.variants <- common.variants[ids]
 	# summary(random.1KG.variants %in% all.as.dhs | random.1KG.variants %in% eQTLs)
@@ -79,19 +79,68 @@ annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 
 	mcols(random.1KG.variants) <- mcols(random.1KG.variants)[,c(1,2,4)]
 	
 	
-	## Finally, sample randomly from the DHS variants with no evidence for allele bias (q value > 0.99)
-	## Additionally, the variant could be not detected as imbalanced, if there are too few het individuals.
-	## Add additional filter to require at least 10 hets
-	summary(negative.as.dhs$q.value > 0.90 & negative.as.dhs$numhets >= 10)
-	dnase.variants <- negative.as.dhs[negative.as.dhs$q.value > 0.90 & negative.as.dhs$numhets >= 10]
-	## Sample the same number of DNase variants as for random variants. Or take all of them, if random variant size is greater
-	if (length(random.1KG.variants) < length(dnase.variants)) {
-		dnase.variants <- dnase.variants[sample(1:length(dnase.variants), size = length(random.1KG.variants), replace = F)]
-	}
-	dnase.variants$source <- "dnase"
-	mcols(dnase.variants) <- mcols(dnase.variants)[,11:13]
+	######################################
+	### Old strategy for DHS selection ###
+	######################################
+	# ### Variants are sampled from the pan-tissue tests. These variants will not necessarily be within a DHS region for the given tissue.
+	# ## Finally, sample randomly from the DHS variants with no evidence for allele bias (q value > 0.99)
+	# ## Additionally, the variant could be not detected as imbalanced, if there are too few het individuals.
+	# ## Add additional filter to require at least 10 hets
+	# summary(negative.as.dhs$q.value > 0.90 & negative.as.dhs$numhets >= 10)
+	# dnase.variants <- negative.as.dhs[negative.as.dhs$q.value > 0.90 & negative.as.dhs$numhets >= 10]
+	# ## Sample the same number of DNase variants as for random variants. Or take all of them, if random variant size is greater
+	# if (length(random.1KG.variants) < length(dnase.variants)) {
+	# 	dnase.variants <- dnase.variants[sample(1:length(dnase.variants), size = length(random.1KG.variants), replace = F)]
+	# }
+	# dnase.variants$source <- "dnase"
+	# mcols(dnase.variants) <- mcols(dnase.variants)[,11:13]
+	######################################
 	
-	## Combine matched and random variants
+	######################################
+	### New strategy for DHS selection ###
+	######################################
+	### Load the variant set used for positive variant selection
+	### Assign the ref and alt alleles from the pan-tissue set
+	### Take N variants with the least evindence 
+	
+	dnase.variants <- GRanges(read.table(paste0("./cache/snps.multicell.bySample/snps.multicell.", variant.file.id, ".bed"), col.names = c("chr", "start", "end", "AS_DHS"), stringsAsFactors = F))
+	## Convert to 1-based coordinates
+	start(dnase.variants) <- end(dnase.variants)
+	summary(dnase.variants$AS_DHS)
+	num.AS <- sum(dnase.variants$AS_DHS)
+	
+	## The tissue-specific variant file doesn't have allele information. Load it from the full variant file
+	if (file.exists("./cache/allele.biased.DHS.variants.all.rds")) {
+		all.as.dhs <- readRDS("./cache/allele.biased.DHS.variants.all.rds")
+	} else {
+		source("./lib/prepare.AS_DHS.variants.R")
+	}
+	
+	if (any(is.na(match(dnase.variants, all.as.dhs)))) {
+		warning("Some of the tisue-specific variants are not found in the global file and can't be assigned REF and ALT alleles.")
+	}
+	dnase.variants$REF <- all.as.dhs[match(dnase.variants, all.as.dhs)]$REF
+	dnase.variants$ALT <- all.as.dhs[match(dnase.variants, all.as.dhs)]$ALT
+	
+	## Add annotation for number of hets and evindence for allele imbalance
+	dnase.variants$numhets <- all.as.dhs[match(dnase.variants, all.as.dhs)]$numhets
+	dnase.variants$q.value <- all.as.dhs[match(dnase.variants, all.as.dhs)]$q.value
+	
+	
+	## Subset to the variants that have at least 10 hets
+	dnase.variants <- dnase.variants[dnase.variants$numhets >= 10]
+	
+	## Subset to the variants that are NOT allele biased
+	dnase.variants <- dnase.variants[!dnase.variants$AS_DHS]
+	
+	## Order by least evidence for allele bias
+	dnase.variants <- dnase.variants[order(dnase.variants$q.value, decreasing = T)]
+	
+	## Take N x 2 variants with the least evidence for allele balance, where N is the number of allele imbalanced variants in the dataset.
+	dnase.variants <- dnase.variants[1:num.AS*2]
+	
+	
+	### Combine matched and random variants ###
 	rm(variants)
 	variants <- c(matched.1KG.variants, random.1KG.variants, dnase.variants)
 	## Reorder 1KG variants
@@ -113,7 +162,6 @@ annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 
 	variants <- annotate.GERP(variants)
 	variants <- annotate.phastCons(variants)
 	variants <- annotate.phyloP(variants)
-	
 	
 	## Annotate variants with tissue-specific epigenetic marks and ChromHMM and GEP predicted states
 	source("./lib/epigenome.annotation.R")

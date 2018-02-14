@@ -28,6 +28,7 @@ for (i in 1:nrow(download.table)) {
 
 for (fname in list.files(".", "GRCh38.narrowPeak.gz")) {
     print(fname)
+    outname <- gsub(".GRCh38", "", fname)
     hg38 <- read.table(fname)
     write.table(hg38[,1:4], "tmp.hg38.bed", sep = "\t", quote = F, row.names = F, col.names = F)
     system("~/tools/liftOver/liftOver tmp.hg38.bed ~/tools/liftOver/hg38ToHg19.over.chain.gz tmp.hg19.bed unmapped.bed")
@@ -36,5 +37,5 @@ for (fname in list.files(".", "GRCh38.narrowPeak.gz")) {
     gz1 <- gzfile(outname, "w")
     write.table(hg19, gz1, sep = "\t", quote = F, row.names = F, col.names = F)
     close(gz1)
+    system("rm tmp.hg19.bed tmp.hg38.bed unmapped.bed")
 }
-

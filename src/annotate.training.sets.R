@@ -117,6 +117,7 @@ head(mappings)
 
 ## ChromHMM calls are not available for all tissues. Remove the tissues for which ChromHMM calls are not available
 chromhmm.ids <- gsub("_.*", "", list.files("./cache/ENCODE/chromHMM.calls/", "mnemonics.bed.gz$"))
+chromhmm.ids <- gsub("_.*", "", list.files("./cache/ENCODE/chromHMM.core.calls/", "mnemonics.bed.gz$"))
 mappings <- mappings[mappings$tissue.id %in% chromhmm.ids,]
 dim(mappings)
 

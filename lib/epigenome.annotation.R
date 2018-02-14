@@ -124,9 +124,8 @@ epigenome.annotation <- function(variants, tissue.id) {
 	# source("~/tools/R.functions.library/annotate.variants.from.GRanges.R")
 	
 	## Add annotation for different chromHMM classes for a given tissue
-	print("Adding tissue-specific ChromHMM annotation")
-	state <- list.files("./cache/ENCODE/chromHMM.calls", paste0(tissue.id, "_18_core"), full.names = T)
-	# state <- list.files("./cache/ENCODE/chromHMM.core.calls", paste0(tissue.id, "_15_core"), full.names = T)
+	print("Adding tissue-specific 15-state ChromHMM annotation")
+	state <- list.files("./cache/ENCODE/chromHMM.core.calls", paste0(tissue.id, "_15_core"), full.names = T)
 	if (length(state) == 0) {
 		stop("There is no ChromHMM annotation available for this tissue ID")
 	}
@@ -137,9 +136,25 @@ epigenome.annotation <- function(variants, tissue.id) {
 	olaps <- findOverlaps(variants, state)
 	## Remove duplicated query hits, just in case (this will only leave the first hit)
 	olaps <- olaps[!duplicated(queryHits(olaps))]
-	variants$chromHMM.state <- state[subjectHits(olaps)]$state
+	variants$chromHMM.15.state <- state[subjectHits(olaps)]$state
 	rm(list=c("state"))
 	gc()
+	
+	## Add annotation for different chromHMM classes for a given tissue
+	print("Adding tissue-specific 18-state ChromHMM annotation")
+	state <- list.files("./cache/ENCODE/chromHMM.calls", paste0(tissue.id, "_18_core"), full.names = T)
+	if (length(state) != 0) {
+		print(state)
+		state <- GRanges(read.table(state, sep = "\t", col.names = c("chr", "start", "end", "state"), stringsAsFactors = F))
+		# head(state)
+		olaps <- findOverlaps(variants, state)
+		## Remove duplicated query hits, just in case (this will only leave the first hit)
+		olaps <- olaps[!duplicated(queryHits(olaps))]
+		variants$chromHMM.18.state <- state[subjectHits(olaps)]$state
+		rm(list=c("state"))
+		gc()
+	}
+	
 	
 	### Add annotation for IDEAS chromatin state calls
 	## Add annotation for different chromHMM classes for a given tissue
