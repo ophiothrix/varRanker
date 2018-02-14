@@ -4,7 +4,7 @@ feature.motif.annotation <- function(variants) {
   source("./lib/add.features.to.variant.sets.R")
   variants <- assign.features(variants)
 
-  variants$id <- 1:length(variants)
+  # variants$id <- 1:length(variants)
   
   #### Adding motif damage scores ----------------------------------------------
   ### Add motif damage score for all the variants. Current implementation cannot handle indels, so we'll ignore them for the time being.

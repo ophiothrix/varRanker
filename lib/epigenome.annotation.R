@@ -4,7 +4,7 @@
 epigenome.annotation <- function(variants, tissue.id) {
 	### Download the ROADMAP data ###
 	source("./lib/download.ROADMAP.data.R")
-	# download.ROADMAP.data(tissue.id)
+	download.ROADMAP.data(tissue.id)
 	
 	### Annotate the variants with ENCODE data
 	annos <- list.files("./cache/ENCODE", pattern = tissue.id, full.names = T)
@@ -126,6 +126,7 @@ epigenome.annotation <- function(variants, tissue.id) {
 	## Add annotation for different chromHMM classes for a given tissue
 	print("Adding tissue-specific ChromHMM annotation")
 	state <- list.files("./cache/ENCODE/chromHMM.calls", paste0(tissue.id, "_18_core"), full.names = T)
+	# state <- list.files("./cache/ENCODE/chromHMM.core.calls", paste0(tissue.id, "_15_core"), full.names = T)
 	if (length(state) == 0) {
 		stop("There is no ChromHMM annotation available for this tissue ID")
 	}
@@ -150,14 +151,13 @@ epigenome.annotation <- function(variants, tissue.id) {
 	## Remove duplicated query hits, just in case (this will only leave the first hit)
 	olaps <- olaps[!duplicated(queryHits(olaps))]
 	## It seems that occasionally some variants don't get IDEAS annotation - there's no obvious pattern other than all of them come from "random" sampling
-	## Check if all variants got IDEAS annotation. If not, annotate those that have a match and remove those that don't
 	if (all(1:length(variants) %in% queryHits(olaps))) {
 		variants$IDEAS.state <- state[subjectHits(olaps)]$state
 	} else {
 		variants$IDEAS.state <- as.character(NA)
 		variants[queryHits(olaps)]$IDEAS.state <- state[subjectHits(olaps)]$state
-		## Remove variants without IDEAS annotation
-		variants <- variants[!is.na(variants$IDEAS.state)]
+		## Check if all variants got IDEAS annotation. For the variants that didn't, assign "0_Quies"
+		variants$IDEAS.state[is.na(variants$IDEAS.state)] <- "0_Quies"
 	}
 	rm(list=c("state"))
 	gc()

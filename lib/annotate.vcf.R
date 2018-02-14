@@ -1,8 +1,8 @@
 #### Annotate variants from a VCF file ####
 
 ### Function to annotate variants from a vcf file with a given tissue-specific annotation and convert them into a dataframe compatible with prediction.
-path.to.vcf <- "./cache/BRCA-US.small.vcf.gz"
-tissue.id <- "E119"
+# path.to.vcf <- "./cache/BRCA-US.vsmall.vcf.gz"
+# tissue.id <- "E119"
 annotate.vcf <- function(path.to.vcf, tissue.id) {
 	require(GenomicRanges)
 	require(data.table)
@@ -19,10 +19,14 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 		colnames(variants)[1:5] <- c("chr", "start", "rsID", "REF", "ALT")
 	}
 	
-	## Extract allele frequencies
-	colnames(variants)[grep("AF", variants[1,])] <- "info"
-	variants[, AF:=gsub(".*AF=([0-9\\.,]+);.*", "\\1", variants[["info"]])]
+	## Save the original copy
+	variants$varID <- paste(variants$chr, variants$start, sep = ":")
+	original.variants <- variants
 	
+	# ## Extract allele frequencies
+	# colnames(variants)[grep("AF", variants[1,])] <- "info"
+	# variants[, AF:=gsub(".*AF=([0-9\\.,]+);.*", "\\1", variants[["info"]])]
+	# 
 	## Remove extra columns
 	variants[, grep("^V[0-9]+", colnames(variants)):=NULL]
 	variants[, c("info", "rsID"):=NULL]
@@ -33,14 +37,14 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 	}
 	
 	## Check if it's a multi-allele vcf. If so, split into single alleles
-	if (length(grep(",", variants$alt)) != 0) {
+	if (length(grep(",", variants$ALT)) != 0) {
 		print("The vcf file is multi-allelic. Splitting into single alleles.")
-		split.alt <- strsplit(variants$alt, ",")
-		split.af <- strsplit(variants$AF, ",")
-		n.alleles <- unlist(lapply(split.alt, length))
+		split.ALT <- strsplit(variants$ALT, ",")
+		# split.af <- strsplit(variants$AF, ",")
+		n.alleles <- unlist(lapply(split.ALT, length))
 		variants <- variants[rep(1:nrow(variants), n.alleles)]
-		variants$alt <- unlist(split.alt)
-		variants$AF <- unlist(split.af)
+		variants$ALT <- unlist(split.ALT)
+		# variants$AF <- unlist(split.af)
 	}
 	
 	## Add end coordinate
