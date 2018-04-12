@@ -3,7 +3,7 @@ rm(list = ls())
 gc()
 source("./src/prep.sets.R")
 # sets.list <- prep.sets(path.to.full.set = "./cache/all.variants.partial.annotation.rds", test.set.tissues = c("fMuscle", "HSMM"))
-sets.list <- prep.sets(path.to.full.set = "./cache/all.variants.partial.annotation.rds", path.to.test.sets = "./cache/", test.set.tissues = "HSMM")
+sets.list <- prep.sets(path.to.full.set = "./cache/all.variants.k27.annotation.rds", path.to.test.sets = "./cache", test.set.tissues = "HSMM")
 names(sets.list)
 
 train.set <- sets.list$training
@@ -31,29 +31,33 @@ features <- features[!features %in% c("varID", "source")]
 ### Random fores model ###
 ##########################
 ## ntrees = 71
-nt = 71
+nt = 40
 ## max_depth = 10
-md = 10
+md = 8
 
 ## With cross-validation
 model_drf <- h2o.randomForest(x = features, y = target, training_frame = train.set.h2o, model_id = "h2o_drf", nfolds = nfolds, ntrees = nt, max_depth = md, fold_assignment = "Modulo", keep_cross_validation_predictions = T, seed = 16052017, validation_frame = valid.set.h2o, score_each_iteration = T)
 
 
+h2o.auc(model_drf, train = T)
 h2o.auc(model_drf, xval = T)
 h2o.auc(model_drf, valid = T)
-h2o.auc(model_drf, train = T)
 
 #################
 ### GBM model ###
 #################
 ## ntrees = 43
-nt = 43
+nt = 13
 ## max_depth = 7
-md = 7
+md = 4
 ## learn_rate = 0.1
-lr = 0.1
+lr = 0.16
+# variant sample rate
+sr <- 0.9
+# feature sample rate
+cr <- 0.9
 
-model_gbm <- h2o.gbm(x = features, y = target, training_frame = train.set.h2o, model_id = "h2o_gbm", ntrees = nt, max_depth = md, learn_rate = lr, seed = 16052017, validation_frame = valid.set.h2o, score_each_iteration = T, nfolds = nfolds, fold_assignment = "Modulo", keep_cross_validation_predictions = TRUE)
+model_gbm <- h2o.gbm(x = features, y = target, training_frame = train.set.h2o, model_id = "h2o_gbm", ntrees = nt, max_depth = md, learn_rate = lr, seed = 16052017, validation_frame = valid.set.h2o, score_each_iteration = T, sample_rate = sr, col_sample_rate = cr, nfolds = nfolds, fold_assignment = "Modulo", keep_cross_validation_predictions = TRUE)
 
 h2o.auc(model_gbm, train = T)
 h2o.auc(model_gbm, xval = T)
@@ -260,3 +264,20 @@ roc2 <- roc(response = as.vector(test.cato$regulatory), predictor = runif(nrow(t
 roc2$auc
 
 
+predicted <- h2o.predict(model_ensemble, valid.set.h2o)
+predicted$regulatory <- valid.set.h2o$regulatory
+predicted$source <- valid.set.h2o$source
+predicted <- as.data.frame(predicted)
+predicted$predict[predicted$p1 < 0.7] <- 0
+head(predicted)
+predicted %>%
+	group_by(source) %>%
+	summarise(wrong = sum(predict != regulatory), right = sum(predict == regulatory), total = sum(predict != regulatory) + sum(predict == regulatory)) %>%
+	mutate(error.rate = wrong / total)
+min(predicted$p1[predicted$predict == 1])
+
+test.set <- as.h2o(sets.list$E120.annotated.HSMM.variants.rds)
+plot(h2o.performance(model_ensemble, test.set))
+
+table(test.set$source)
+plot(h2o.performance(model_ensemble, valid.set.h2o))

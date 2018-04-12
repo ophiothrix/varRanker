@@ -9,6 +9,7 @@
 # gc()
 prep.sets <- function(path.to.full.set, path.to.test.sets, test.set.tissues) {
 	source("./lib/prepare.training.set.R")
+	set.seed("26022018")
 	
 	## Select the variant set(s) that are to be used for testing
 	# test.set.tissues <- c("HSMM")
@@ -37,7 +38,7 @@ prep.sets <- function(path.to.full.set, path.to.test.sets, test.set.tissues) {
 		pos.path <- t.set
 		neg.path <- gsub("variants.rds", "negative.set.rds", t.set)
 		## Make the test set
-		test.set <- prepare.training.set(path.to.positive.set = pos.path, path.to.negative.set = neg.path, prop.matched = 0.5, prop.dnase = 0.5, prop.random = 0.05, negative.positive.ratio = 2)
+		test.set <- prepare.training.set(path.to.positive.set = pos.path, path.to.negative.set = neg.path, prop.matched = 0.5, prop.dnase = 0.5, prop.random = 0.05, negative.positive.ratio = 1)
 		## Subsample negative set to make it the same size as positive
 		ids <- sample(which(test.set$regulatory == 0), -diff(table(test.set$regulatory)), replace = F)
 		test.set <- test.set[-ids,]

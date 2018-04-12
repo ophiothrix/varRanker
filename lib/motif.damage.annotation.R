@@ -89,7 +89,7 @@ get.damage.scores.direct <- function(database.path, variants) {
 	ref.seq <- as.character(getSeq(BSgenome.Hsapiens.UCSC.hg19, variants.tmp))
 	## Check if the reference allele is the same in reference sequence and in the vcf
 	ref.allele <- substr(ref.seq, flnk+1, flnk+1)
-	if(all(ref.allele != variants.tmp$REF)) {
+	if(!all(ref.allele == variants.tmp$REF)) {
 		stop("Reference alleles in the variant object do not match the corresponding base in human reference genome")
 	}
 	## To each sequence add corresponding genomic coordinates

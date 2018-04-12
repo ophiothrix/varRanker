@@ -4,7 +4,7 @@
 epigenome.annotation <- function(variants, tissue.id) {
 	### Download the ROADMAP data ###
 	source("./lib/download.ROADMAP.data.R")
-	download.ROADMAP.data(tissue.id)
+	# download.ROADMAP.data(tissue.id)
 	
 	### Annotate the variants with ENCODE data
 	annos <- list.files("./cache/ENCODE", pattern = tissue.id, full.names = T)

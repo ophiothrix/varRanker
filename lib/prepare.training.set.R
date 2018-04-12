@@ -6,7 +6,7 @@
 # path.to.positive.set <- "./cache/E120.annotated.fMuscle.variants.rds"
 # path.to.negative.set <- "./cache/E120.annotated.fMuscle.negative.set.rds"
 require(GenomicRanges)
-prepare.training.set <- function(path.to.positive.set, path.to.negative.set, prop.matched = 0.45, prop.dnase = 0.5, prop.random = 0.05, negative.positive.ratio = 3) {
+prepare.training.set <- function(path.to.positive.set, path.to.negative.set, prop.matched = 0.45, prop.dnase = 0.5, prop.random = 0.05, negative.positive.ratio = 2) {
 	## load the datasets
 	positive.set <- readRDS(path.to.positive.set)
 	negative.set <- readRDS(path.to.negative.set)
@@ -31,7 +31,7 @@ prepare.training.set <- function(path.to.positive.set, path.to.negative.set, pro
 	n.random <- round(nrow(positive.set) * prop.random * negative.positive.ratio)
 	
 	## Subsample the negative variants
-	set.seed(08062017)
+	# set.seed(08062017)
 	negative.set <- negative.set[c(sample(x = which(negative.set$source == "matched"), size = n.matched, replace = F),
 	  sample(x = which(negative.set$source == "dnase"), size = n.dnase, replace = F),
 	  sample(x = which(negative.set$source == "random"), size = n.random, replace = F)),]
@@ -68,10 +68,13 @@ prepare.training.set <- function(path.to.positive.set, path.to.negative.set, pro
 	
 	## Convert character features into factors and numeric as necessary
 	training.set$feature <- as.factor(training.set$feature)
-	training.set$chromHMM.state <- as.factor(training.set$chromHMM.state)
+	if (!is.null(training.set$chromHMM.18.state)) {
+		training.set$chromHMM.18.state <- as.factor(training.set$chromHMM.18.state)
+	}
+	training.set$chromHMM.15.state <- as.factor(training.set$chromHMM.15.state)
 	training.set$GERP.score <- as.numeric(training.set$GERP.score)
 	training.set$regulatory <- as.factor(training.set$regulatory)
-	if (length(grep("IDEAS.state", colnames(training.set))) != 0) {
+	if (!is.null(training.set$IDEAS.state)) {
 		training.set$IDEAS.state <- as.factor(training.set$IDEAS.state)
 	}
 	if (length(grep("jaspar.motif.hit", colnames(training.set))) != 0) {

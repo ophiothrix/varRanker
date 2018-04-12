@@ -23,7 +23,7 @@ combine.training.sets <- function(positive.sets, dnase = 0.5, matched = 0.5, ran
 	
 	combined.set <- data.frame()
 	for (s in 1:length(training.sets)) {
-		print(s)
+		print(names(training.sets)[s])
 		combined.set <- rbind(combined.set, training.sets[[s]][,col.intersect])
 	}
 	

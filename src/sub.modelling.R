@@ -1,3 +1,6 @@
+### TODO: Need to fix imperfect.variants.partial.annotation ####
+### Also would be nice to make the collection for sets with H3K27ac (and 18 state ChromHMM) ###
+
 ## The rationale:
 
 ## We have some variant sets that are annotated with perfectly matched epigenetic features and others that are imperfectly matched. These are likely to behave differently in both training and predicting variant impact. These will be refered to as perfect and imperfect annotations.
@@ -45,11 +48,11 @@ p.sets <- list.files("./cache", "variants.rds", full.names = T)
 
 p.sets <- p.sets[basename(p.sets) %in% paste0(mappings$tissue.id, ".annotated.", mappings$AS.DHS.tissue, ".variants.rds")]
 
-combined.set <- combine.training.sets(p.sets)
+combined.set <- combine.training.sets(positive.sets = p.sets)
 dim(combined.set)
 variant.summary["all.variants.partial.annotation",] <- table(combined.set$regulatory)
 saveRDS(combined.set, "./cache/all.variants.partial.annotation.rds")
-
+rm(combined.set)
 
 # imperfect.variants.partial.annotation ------------------------------
 ## Get the list of imperfectly matched variant-tissue annotations
@@ -59,10 +62,11 @@ imperfect.variants <- mappings[!mappings$perfect.match,]
 
 p.sets <- p.sets[basename(p.sets) %in% paste0(imperfect.variants$tissue.id, ".annotated.", imperfect.variants$AS.DHS.tissue, ".variants.rds")]
 
-combined.set <- combine.training.sets(p.sets)
+combined.set <- combine.training.sets(positive.sets = p.sets)
 dim(combined.set)
 variant.summary["imperfect.variants.partial.annotation",] <- table(combined.set$regulatory)
 saveRDS(combined.set, "./cache/imperfect.variants.partial.annotation.rds")
+rm(combined.set)
 
 
 
@@ -78,6 +82,7 @@ combined.set <- combine.training.sets(p.sets)
 dim(combined.set)
 variant.summary["perfect.variants.partial.annotation",] <- table(combined.set$regulatory)
 saveRDS(combined.set, "./cache/perfect.variants.partial.annotation.rds")
+rm(combined.set)
 
 
 
@@ -102,6 +107,7 @@ combined.set <- combine.training.sets(p.sets[full.anno])
 dim(combined.set)
 variant.summary["all.variants.full.annotation",] <- table(combined.set$regulatory)
 saveRDS(combined.set, "./cache/all.variants.full.annotation.rds")
+rm(combined.set)
 
 
 
@@ -127,6 +133,7 @@ combined.set <- combine.training.sets(p.sets[full.anno])
 dim(combined.set)
 variant.summary["imperfect.variants.full.annotation",] <- table(combined.set$regulatory)
 saveRDS(combined.set, "./cache/imperfect.variants.full.annotation.rds")
+rm(combined.set)
 
 
 # perfect.variants.full.annotation -----------------------------------
@@ -151,6 +158,7 @@ combined.set <- combine.training.sets(p.sets[full.anno])
 dim(combined.set)
 variant.summary["perfect.variants.full.annotation",] <- table(combined.set$regulatory)
 saveRDS(combined.set, "./cache/perfect.variants.full.annotation.rds")
+rm(combined.set)
 
 
 write.csv(variant.summary, "./reports/annotated.variant.summary.csv")
@@ -167,3 +175,28 @@ summary(duplicated(combined.set$varID[combined.set$source == "matched"]))
 summary(duplicated(combined.set$varID[combined.set$source == "positive"]))
 
 ## The redundancy is almost as bad for the negative variants (between 20 and 40%) as it is for positive ones (about 30%). This is likely stemming from the fact that we set the same seed when sampling negative variants from different tissues, so we end up sampling largely the same variants. One way to get around this is to over-sample the negative variants, say to 3 time the number of positive ones. 
+
+### all.variants.full.annotation
+## Get the list of all variant-tissue annotations
+## Limit the set to the tissues with full set of annotations available
+source("./lib/combine.training.sets.R")
+p.sets <- list.files("./cache", "variants.rds", full.names = T)
+
+p.sets <- p.sets[basename(p.sets) %in% paste0(mappings$tissue.id, ".annotated.", mappings$AS.DHS.tissue, ".variants.rds")]
+
+## Check the list of annotations
+features <- list()
+for (p.set.name in p.sets) {
+	print(p.set.name)
+	features[[p.set.name]] <- colnames(mcols(readRDS(p.set.name)))
+}
+full.set <- unique(unlist(features))
+# unlist(lapply(features, function(x) all(full.set %in% x)))
+full.anno <- unlist(lapply(features, function(x) length(grep("H3K27ac.narrowPeak", x)) != 0))
+
+combined.set <- combine.training.sets(positive.sets = p.sets[full.anno])
+dim(combined.set)
+table(combined.set$source)
+variant.summary["all.variants.full.annotation",] <- table(combined.set$regulatory)
+saveRDS(combined.set, "./cache/all.variants.k27.annotation.rds")
+rm(combined.set)

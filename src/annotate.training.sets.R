@@ -116,24 +116,27 @@ sum(!duplicated(mappings$AS.DHS.tissue))
 head(mappings)
 
 ## ChromHMM calls are not available for all tissues. Remove the tissues for which ChromHMM calls are not available
-chromhmm.ids <- gsub("_.*", "", list.files("./cache/ENCODE/chromHMM.calls/", "mnemonics.bed.gz$"))
+# chromhmm.ids <- gsub("_.*", "", list.files("./cache/ENCODE/chromHMM.calls/", "mnemonics.bed.gz$"))
 chromhmm.ids <- gsub("_.*", "", list.files("./cache/ENCODE/chromHMM.core.calls/", "mnemonics.bed.gz$"))
 mappings <- mappings[mappings$tissue.id %in% chromhmm.ids,]
+sum(mappings$AS.variants)
 dim(mappings)
 
-mappings <- mappings[mappings$AS.DHS.tissue == "vHMEC",]
-nrow(mappings) - nrow(mappings[mappings$AS.DHS.tissue == "fSkin_fibro",])
+# mappings <- mappings[mappings$AS.DHS.tissue == "vHMEC",]
+# nrow(mappings) - nrow(mappings[mappings$AS.DHS.tissue == "fSkin_fibro",])
 
 
 ## Annotate each of the matches
 for (i in 1:nrow(mappings)) {
 # for (i in 1:37) {
 	print(paste0("Annotating ", mappings$AS.DHS.tissue[i], " with ", mappings$tissue.name[i], " features"))
-	positive.variant.set <- annotate.AS.DHS(variant.file.id = mappings$AS.DHS.tissue[i], tissue.id = mappings$tissue.id[i])
+	# positive.variant.set <- annotate.AS.DHS(variant.file.id = mappings$AS.DHS.tissue[i], tissue.id = mappings$tissue.id[i])
 	negative.variant.set <- annotate.negative.set(variant.file.id = mappings$AS.DHS.tissue[i], tissue.id = mappings$tissue.id[i], window.to.match = 2000, maf.cutoff = 0)
 	rm(list = c("positive.variant.set", "negative.variant.set"))
 	gc()
 }
 
+
+mappings[i,]
 
 head(mappings[order(mappings$AS.variants, decreasing = T),], 30)

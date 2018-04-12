@@ -60,9 +60,13 @@ annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 
 	# summary(matched.1KG.variants %in% all.as.dhs)
 	# summary(matched.1KG.variants %in% eQTLs)
 	olaps <- findOverlaps(matched.1KG.variants, eQTLs)
-	matched.1KG.variants <- matched.1KG.variants[-queryHits(olaps)]
+	if (length(olaps) != 0) {
+		matched.1KG.variants <- matched.1KG.variants[-queryHits(olaps)]
+	}
 	olaps <- findOverlaps(matched.1KG.variants, all.as.dhs)
-	matched.1KG.variants <- matched.1KG.variants[-queryHits(olaps)]
+	if (length(olaps) != 0) {
+		matched.1KG.variants <- matched.1KG.variants[-queryHits(olaps)]
+	}
 	matched.1KG.variants$source <- "matched"
 	# set.seed(15052017)
 	ids <- sample(1:length(common.variants), size = length(matched.1KG.variants)*1.3, replace = F)
@@ -70,9 +74,14 @@ annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 
 	# summary(random.1KG.variants %in% all.as.dhs | random.1KG.variants %in% eQTLs)
 	# summary(random.1KG.variants %in% eQTLs)
 	olaps <- findOverlaps(random.1KG.variants, eQTLs)
-	random.1KG.variants <- random.1KG.variants[-queryHits(olaps)]
+	if (length(olaps) != 0) {
+		random.1KG.variants <- random.1KG.variants[-queryHits(olaps)]
+	}
 	olaps <- findOverlaps(random.1KG.variants, all.as.dhs)
-	random.1KG.variants <- random.1KG.variants[-queryHits(olaps)]
+	if (length(olaps) != 0) {
+		random.1KG.variants <- random.1KG.variants[-queryHits(olaps)]
+	}
+	
 	random.1KG.variants$source <- "random"
 	## Remove MAF column
 	mcols(matched.1KG.variants) <- mcols(matched.1KG.variants)[,c(1,2,4)]
@@ -136,8 +145,12 @@ annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 
 	## Order by least evidence for allele bias
 	dnase.variants <- dnase.variants[order(dnase.variants$q.value, decreasing = T)]
 	
-	## Take N x 2 variants with the least evidence for allele balance, where N is the number of allele imbalanced variants in the dataset.
-	dnase.variants <- dnase.variants[1:num.AS*2]
+	## Take N variants with the least evidence for allele balance, where N is the number of allele imbalanced variants in the dataset.
+	dnase.variants <- dnase.variants[1:num.AS*1.5]
+	
+	dnase.variants$source <- "dnase"
+	mcols(dnase.variants) <- mcols(dnase.variants)[,c(2:3, 6)]
+	
 	
 	
 	### Combine matched and random variants ###
@@ -145,6 +158,7 @@ annotate.negative.set <- function(variant.file.id, tissue.id, window.to.match = 
 	variants <- c(matched.1KG.variants, random.1KG.variants, dnase.variants)
 	## Reorder 1KG variants
 	variants <- variants[order(variants)]
+	# table(variants$source)
 	
 	### Annotate negative variant set with the same tissue as the positive set ###
 	

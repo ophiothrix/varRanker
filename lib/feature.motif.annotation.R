@@ -14,7 +14,7 @@ feature.motif.annotation <- function(variants) {
   	stop("The variant set contains indels. Remove them before proceeding.")
   }
   
-  ## Start with SNPs and generate explicit motif damage.
+  ## Start with SNPs and calculate explicit motif damage.
   print("Calculating motif damage scores...")
   source("./lib/motif.damage.annotation.R")
   

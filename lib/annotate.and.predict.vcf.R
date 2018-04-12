@@ -13,9 +13,9 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 	} else {
 		variants <- fread(paste0("gunzip -c ", path.to.vcf), stringsAsFactors = F)
 	}
-	head(variants, 12)
+	# head(variants, 12)
 	## Check if there is a SNP id column
-	if (sum(length(grep("A", variants$V3)), length(grep("C", variants$V3)), length(grep("G", variants$V3)), length(grep("T", variants$V3))) != 0) {
+	if (sum(length(grep("A", variants[,3][[1]])), length(grep("C", variants[,3][[1]])), length(grep("G", variants[,3][[1]])), length(grep("T", variants[,3][[1]]))) != 0) {
 		colnames(variants)[1:4] <- c("chr", "start", "REF", "ALT")
 	} else {
 		colnames(variants)[1:5] <- c("chr", "start", "rsID", "REF", "ALT")
@@ -27,8 +27,10 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 	saveRDS(variants, "./cache/original.variants.rds")
 	
 	## Remove extra columns
-	variants[, grep("^V[0-9]+", colnames(variants)):=NULL]
-	variants[, c("info", "rsID"):=NULL]
+	# variants[, grep("^V[0-9]+", colnames(variants)):=NULL]
+	variants[, c("rsID"):=NULL]
+	variants[,5:ncol(variants):=NULL]
+	variants$varID <- paste(variants$chr, variants$start, sep = ":")
 	
 	## Convert to UCSC chromosome names, if not already
 	if (length(grep("chr", variants$chr)) == 0) {
@@ -64,25 +66,40 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 	}
 	
 	## Annotate variants with genomic features, poly-tissue GEP and ChromHMM sets, TF motif scores
-	## From all pre-computed scores at the moment it is only feasible to extract a score for ANY variant for CADD. The others are limited to dbSNP variants, more or less...
-	## For the moment, leave out the pre-computed scores
-	source("./lib/feature.motif.annotation.R")
-	variants <- feature.motif.annotation(variants)
+	if (!file.exists(paste0(path.to.vcf, ".feature.motif.tmp.rds")) | fresh.run == T) {
+		source("./lib/feature.motif.annotation.R")
+		variants <- feature.motif.annotation(variants)
+		## Save intermediate file
+		saveRDS(variants, paste0(path.to.vcf, ".feature.motif.tmp.rds"))
+	} else {
+		variants <- readRDS(paste0(path.to.vcf, ".feature.motif.tmp.rds"))
+	}
 	
 	## Annotate variants with conservation scores
-	source("./lib/add.conservation.scores.R")
-	variants <- annotate.GERP(variants)
-	variants <- annotate.phastCons(variants)
-	variants <- annotate.phyloP(variants)
+	if (!file.exists(paste0(path.to.vcf, ".conservation.tmp.rds")) | fresh.run == T) {
+		source("./lib/add.conservation.scores.R")
+		variants <- annotate.GERP(variants)
+		variants <- annotate.phastCons(variants)
+		variants <- annotate.phyloP(variants)
+		## Save intermediate file
+		saveRDS(variants, paste0(path.to.vcf, ".conservation.tmp.rds"))
+	} else {
+		variants <- readRDS(paste0(path.to.vcf, ".conservation.tmp.rds"))
+	}
 	
 	## Annotate variants with tissue-specific epigenetic marks and ChromHMM and GEP predicted states
 	source("./lib/epigenome.annotation.R")
 	variants <- epigenome.annotation(variants, tissue.id)
+	
+	## Save the variant file
+	saveRDS(variants, file = paste0("./cache/", tissue.id, ".annotated.", gsub(".vcf.*", "", basename(path.to.vcf)), ".variants.rds"))
+}
 
 	###################################
 	####### Predicting variants #######
 	###################################
-	
+predict.vcf <- function(path.to.vcf, tissue.id) {
+	variants <- readRDS(paste0("./cache/", tissue.id, ".annotated.", gsub(".vcf.*", "", basename(path.to.vcf)), ".variants.rds"))
 	source("./src/prep.sets.R")
 	# sets.list <- prep.sets(path.to.full.set = "./cache/all.variants.partial.annotation.rds", test.set.tissues = c("fMuscle", "HSMM"))
 	sets.list <- prep.sets(path.to.full.set = "./cache/all.variants.partial.annotation.rds", path.to.test.sets = "./cache/", test.set.tissues = "HSMM")
@@ -92,7 +109,9 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 	valid.set <- sets.list$validation
 	
 	## Train a random forest model
+	require(pROC)
 	require(h2o)
+	require(RColorBrewer)
 	## Initiate H2O instance
 	localH2O <- h2o.init(nthreads=-1)
 	nfolds <- 5
@@ -115,9 +134,9 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 	### Random fores model ###
 	##########################
 	## ntrees = 71
-	nt = 71
+	nt = 40
 	## max_depth = 10
-	md = 10
+	md = 8
 	
 	## With cross-validation
 	model_drf <- h2o.randomForest(x = features, y = target, training_frame = train.set.h2o, model_id = "h2o_drf", nfolds = nfolds, ntrees = nt, max_depth = md, fold_assignment = "Modulo", keep_cross_validation_predictions = T, seed = 16052017, validation_frame = valid.set.h2o, score_each_iteration = T)
@@ -131,13 +150,17 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 	### GBM model ###
 	#################
 	## ntrees = 43
-	nt = 43
+	nt = 13
 	## max_depth = 7
-	md = 7
+	md = 4
 	## learn_rate = 0.1
-	lr = 0.1
+	lr = 0.16
+	# variant sample rate
+	sr <- 0.9
+	# feature sample rate
+	cr <- 0.9
 	
-	model_gbm <- h2o.gbm(x = features, y = target, training_frame = train.set.h2o, model_id = "h2o_gbm", ntrees = nt, max_depth = md, learn_rate = lr, seed = 16052017, validation_frame = valid.set.h2o, score_each_iteration = T, nfolds = nfolds, fold_assignment = "Modulo", keep_cross_validation_predictions = TRUE)
+	model_gbm <- h2o.gbm(x = features, y = target, training_frame = train.set.h2o, model_id = "h2o_gbm", ntrees = nt, max_depth = md, learn_rate = lr, seed = 16052017, validation_frame = valid.set.h2o, score_each_iteration = T, sample_rate = sr, col_sample_rate = cr, nfolds = nfolds, fold_assignment = "Modulo", keep_cross_validation_predictions = TRUE)
 	
 	# h2o.auc(model_gbm, train = T)
 	# h2o.auc(model_gbm, xval = T)
@@ -181,10 +204,9 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 	# 	filter(p.regulatory != "NA_coding") %>%
 	# 	mutate(p.regulatory=as.numeric(p.regulatory))
 	
-	write.csv(variants, gsub(".vcf.*", paste0(".", tissue.id, ".annotated.csv"), path.to.vcf), quote = F, row.names = F)
+	write.csv(variants[order(variants$p.regulatory, decreasing = T),], gsub(".vcf.*", paste0(".", tissue.id, ".annotated.csv"), path.to.vcf), quote = F, row.names = F)
 	
-	
-	# ## Save the variant file
-	# saveRDS(variants, file = paste0("./cache/", tissue.id, ".annotated.", gsub(".vcf.*", "", basename(path.to.vcf)), ".variants.rds"))
+	## Save the variant file
+	saveRDS(variants, file = paste0("./cache/", tissue.id, ".annotated.", gsub(".vcf.*", "", basename(path.to.vcf)), ".variants.rds"))
 	# return(variants)
 }
