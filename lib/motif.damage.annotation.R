@@ -25,7 +25,7 @@ extract.pfm <- function (database.path, force.run = F) {
 		motifs <- as.data.frame(matrix(unlist(strsplit(grep("MOTIF", meme.file, value = T), " ")), ncol = 3, byrow = T)[,2:3], stringsAsFactors = F)
 		colnames(motifs) <- c("MotifID", "Symbol")
 		# Get the motif lengths
-		motifs$length <- matrix(unlist(strsplit(grep("alength", meme.file, value=4), " ")), ncol = 10, byrow = T)[,6]
+		motifs$length <- matrix(unlist(strsplit(grep("alength", meme.file, value=T), " ")), ncol = 10, byrow = T)[,6]
 		
 		# Extract PFM for each motif. Get the line of each motif and the line of the subsequent motif and get the lines between them minus padding. Need some extra care with the last motif. Essentially, add a "pretend" motif at the end of the object). Also need to add an extra line to the object, or it cuts the last PFM short.
 		pfms <- c(grep("MOTIF", meme.file), length(meme.file)+1)

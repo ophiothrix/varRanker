@@ -3,9 +3,12 @@
 ### Function to annotate variants from a vcf file with a given tissue-specific annotation and convert them into a dataframe compatible with prediction.
 # path.to.vcf <- "./cache/BRCA-US.vsmall.vcf.gz"
 # tissue.id <- "E119"
-# path.to.vcf <- "./cache/starrseq.AS.variants.vcf"
-# tissue.id <- "E199"
-annotate.vcf <- function(path.to.vcf, tissue.id) {
+# path.to.vcf <- "./cache/duplicate.test.vcf"
+# tissue.id <- "E119"
+annotate.vcf(path.to.vcf, tissue.id, fresh.run = T)
+predict.vcf(path.to.vcf = path.to.vcf, tissue.id = tissue.id)
+
+annotate.vcf <- function(path.to.vcf, tissue.id, fresh.run = T) {
 	require(GenomicRanges)
 	require(data.table)
 	if (length(grep("gz", path.to.vcf)) == 0) {
@@ -23,14 +26,14 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 	
 	
 	## Save the original copy
-	variants$varID <- paste(variants$chr, variants$start, sep = ":")
+	variants$varID <- paste(variants$chr, variants$start, variants$REF, variants$ALT, sep = ":")
 	saveRDS(variants, "./cache/original.variants.rds")
 	
 	## Remove extra columns
 	# variants[, grep("^V[0-9]+", colnames(variants)):=NULL]
 	variants[, c("rsID"):=NULL]
 	variants[,5:ncol(variants):=NULL]
-	variants$varID <- paste(variants$chr, variants$start, sep = ":")
+	variants$varID <- paste(variants$chr, variants$start, variants$REF, variants$ALT, sep = ":")
 	
 	## Convert to UCSC chromosome names, if not already
 	if (length(grep("chr", variants$chr)) == 0) {
@@ -65,6 +68,10 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 		variants <- variants[nchar(variants$REF) == 1 & nchar(variants$ALT) == 1]
 	}
 	
+	## It's possible that some datasets will have duplicated variant entries. Make sure to remove them, as they are redundant
+	print("Removing variants that have identical chr-pos-REF-ALT")
+	new.var.id <- paste(as.character(seqnames(variants)), start(variants), variants$REF, variants$ALT, sep = ":")
+	variants <- variants[!duplicated(new.var.id)]
 	## Annotate variants with genomic features, poly-tissue GEP and ChromHMM sets, TF motif scores
 	if (!file.exists(paste0(path.to.vcf, ".feature.motif.tmp.rds")) | fresh.run == T) {
 		source("./lib/feature.motif.annotation.R")
@@ -72,6 +79,7 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 		## Save intermediate file
 		saveRDS(variants, paste0(path.to.vcf, ".feature.motif.tmp.rds"))
 	} else {
+		print("Loading variants from object pre-annotated with features and motif damage scores")
 		variants <- readRDS(paste0(path.to.vcf, ".feature.motif.tmp.rds"))
 	}
 	
@@ -84,6 +92,7 @@ annotate.vcf <- function(path.to.vcf, tissue.id) {
 		## Save intermediate file
 		saveRDS(variants, paste0(path.to.vcf, ".conservation.tmp.rds"))
 	} else {
+		print("Loading variants from object pre-annotated with conservation scores")
 		variants <- readRDS(paste0(path.to.vcf, ".conservation.tmp.rds"))
 	}
 	
@@ -188,8 +197,9 @@ predict.vcf <- function(path.to.vcf, tissue.id) {
 	## Load original variant set
 	original.variants <- readRDS("./cache/original.variants.rds")
 	
-	original.variants$p.regulatory <- "NA_indel"
-	original.variants$p.regulatory[match(names(compressed.p.reg), original.variants$varID)] <- compressed.p.reg
+	original.variants$p.regulatory <- "NA"
+	original.variants$p.regulatory <- compressed.p.reg[match(original.variants$varID, names(compressed.p.reg))]
+	
 	original.variants[1:20,]
 	original.variants[, varID:=NULL]
 	colnames(original.variants)[1] <- "#CHR"

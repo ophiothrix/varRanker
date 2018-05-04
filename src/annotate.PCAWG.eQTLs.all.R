@@ -25,3 +25,4 @@ write.table(eqtls.vcf, "./cache/allSigVars.vcf", quote = F, sep = "\t", row.name
 
 source("./lib/annotate.and.predict.vcf.R")
 annotate.vcf(path.to.vcf = "./cache/allSigVars.vcf", tissue.id = "E119")
+predict.vcf(path.to.vcf = "./cache/allSigVars.vcf", tissue.id = "E119")
